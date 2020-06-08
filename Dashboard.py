@@ -3,15 +3,21 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-import plotly.graph_objects as go
+from plotly import graph_objects as go
 import plotly.express as px
 import dash
 import plotly.figure_factory as ff
 from dash.dependencies import Input, Output
 import dash_html_components as html
 import dash_core_components as dcc
+import dash_bootstrap_components as dbc
 
 app = dash.Dash(__name__)
+
+my_css_url = "https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+app.css.append_css({
+    "external_url": my_css_url
+})
 
 us_state_abbrev = {
     'Alabama': 'AL',
@@ -111,12 +117,14 @@ app.layout = html.Div([
 
         html.Div([
             html.Div([
-                dcc.Dropdown(id='dropdown',
-                             options=[{'label': 'Total', 'value': 'the United States'}, {
-                                 'label': 'Individual', 'value': 'All Locations'}],
-                             value="the United States"
-                             ),
-            ]),
+                dcc.RadioItems(id='dropdown',
+                               options=[
+                                   {'label': 'Total', 'value': 'the United States'},
+                                   {'label': 'Individual', 'value': 'All'},
+                               ],
+                               value='All'
+                               )
+            ], className="white"),
             html.Div([
                 dcc.Graph(id='line_graph'),
             ]),
@@ -127,7 +135,7 @@ app.layout = html.Div([
 
         html.Div([
             html.Div([
-                dcc.Graph(id='map')
+                dcc.Graph(id='map', style={"height": 700})
             ]),
             html.Div([
                 dcc.Slider(
@@ -137,13 +145,13 @@ app.layout = html.Div([
                     step=1,
                     value=len(us_time_series) - 2,
                 ),
-            ])
+            ], className="white")
         ], className="row")
     ])
 ])
 
 
-@app.callback(
+@ app.callback(
     Output(component_id='line_graph', component_property='figure'),
     [Input(component_id='dropdown', component_property='value')]
 )
@@ -152,24 +160,25 @@ def display_line_graph(val):
     if val == "the United States":
         fig.add_trace(go.Scatter(x=np.arange(len(us_totals)),
                                  y=us_totals, mode='lines+markers', name='Cases in the US'))
-    elif val == "All Locations":
+    else:
         for loc in us_time_series['Province_State'].to_list():
             y_list = us_time_series[us_time_series['Province_State'] == loc].transpose()[
                 2:].squeeze().to_list()
             fig.add_trace(go.Scatter(x=np.arange(len(y_list)),
-                                     y=y_list, mode='lines+markers', name=f'{loc}'))
+                                     y=y_list, mode='lines+markers', name=loc))
 
     fig.update_layout(title=f'COVID-19 Cases in {val}',
                       xaxis_title='Days since Jan. 22, 2020',
-                      yaxis_title='Number of Cases', template='plotly_white', hovermode='x unified', hoverlabel=dict(
-                          bgcolor="white",
+                      yaxis_title='Number of Cases', template='plotly_dark', hovermode='x unified', hoverlabel=dict(
+                          bgcolor="black",
                           font_size=11,
-                          font_family="Rockwell"
+                          font_family="Rockwell",
+                          font_color="white"
                       ))
     return fig
 
 
-@app.callback(
+@ app.callback(
     Output(component_id='map', component_property='figure'),
     [Input(component_id='day-slider', component_property='value')]
 )
@@ -180,38 +189,21 @@ def display_map(slider_val):
             loc_cases = loc_cases.append({"Location": us_state_abbrev[loc], "Number of Cases": us_time_series[us_time_series['Province_State'] == loc].transpose()[
                 2:].squeeze().to_list()[slider_val]}, ignore_index=True)
 
-    """ fig = px.choropleth(loc_cases,  # Input Pandas DataFrame
-                        locations="Location",  # DataFrame column with locations
-                        color="Number of Cases",
-                        range_color=(0, 12),
-                        color_continuous_scale="Viridis",  # DataFrame column with color values
-                        hover_name="Number of Cases",  # DataFrame column hover info
-                        locationmode='USA-states')  # Set to plot as US States """
-
     fig = go.Figure(data=go.Choropleth(
         locations=loc_cases['Location'],  # Spatial coordinates
         z=loc_cases['Number of Cases'].astype(
             float),  # Data to be color-coded
         locationmode='USA-states',  # set of locations match entries in `   s`
-        colorscale='Reds',
+        colorscale='Blues',
         colorbar_title="Number of Cases",
     ))
-
-    print(loc_cases['Location'])
-    print(loc_cases['Number of Cases'])
 
     fig.update_layout(
         title_text='Map of COVID-19 Cases in the U.S.',  # Create a Title
         geo_scope='usa',  # Plot only the USA instead of globe
+        template='plotly_dark'
     )
     return fig
-
-    """     print(loc_cases)
-
-    fig = ff.create_choropleth(fips=loc_cases["Location"], values=loc_cases["Number of Cases"], colorscale=colorscale,
-                               county_outline={'color': 'rgb(255,255,255)', 'width': 0.5}, round_legend_values=True,
-                               legend_title='Number of Cases', title='US Map of COVID-19 Cases'
-                               ) """
 
 
 if __name__ == "__main__":

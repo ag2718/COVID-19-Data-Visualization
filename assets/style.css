@@ -41,6 +41,22 @@ body {
     z-index: 1002;
 }*/
 
+body {
+  background-color: rgb(17, 17, 17);
+}
+
+p {
+  color: white;
+}
+
+h1 {
+  color: white;
+}
+
+.white {
+  color: white;
+  background-color: rgb(17, 17, 17);
+}
 
 /* Grid
 –––––––––––––––––––––––––––––––––––––––––––––––––– */
