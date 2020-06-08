@@ -118,14 +118,9 @@ app.layout = html.Div(children=[
     html.Div(className='row', children=[
 
         html.Div(className="four columns", children=[
-            dcc.RadioItems(id='dropdown',
-                           options=[
-                               {'label': 'Total', 'value': 'the United States'},
-                               {'label': 'Individual', 'value': 'All'},
-                           ],
-                           value='All'
-                           )
-        ], style={'margin-left': 40, 'margin-right': 30, 'color': 'white'}),
+            html.Button('Switch Graph View',
+                        id='line-graph-button', n_clicks=0)
+        ], style={'margin-top': 30, 'text-align': 'center', 'color': 'white'}),
 
         html.Div(className="seven columns", children=[
             html.P("\nThis graph represents the number of cases of COVID-19 in the U.S. as a function of days after January 22, 2020. This data was collected by John Hopkins University and made freely available on GitHub. Either select 'Total' to view all cases, or select 'Invidual to view individual data for all the states. To view data only for a specific state, click in the legend of the graph. You can also compare the data of two or more states in this way.")
@@ -136,38 +131,43 @@ app.layout = html.Div(children=[
     html.Div(className='row', children=[
         dcc.Graph(id='line_graph', config={'displayModeBar': False},
                   animate=True)
-    ]),
+    ], style={'margin-left': 50, 'margin-right': 50}),
 
     html.Div(className='row', children=[
         html.Div(className="eight columns", children=[
-            dcc.Graph(id='map', style={"height": 500}, config={'displayModeBar': False},
-                      animate=True)
+            dcc.Graph(id='map', style={"height": 500},
+                      config={'displayModeBar': False})
         ]),
         html.Div(className="three columns", children=[
             html.P(
-                "This is a map of COVID-19 cases in the United States. Note that the colors are scaled logarithmically. When hovering over a state, the value displayed is the base-10 log of the cases in that state.")
+                "This is a cloropleth map of COVID-19 cases in the United States. Note that the colors are scaled logarithmically so that differences are more visible. Move the slider below to change the day of the data the map is showing."),
+            html.Div(className="row", children=[
+                dcc.Slider(
+                    id='day-slider',
+                    min=0,
+                    max=us_time_series.shape[1] - 3,
+                    step=1,
+                    value=us_time_series.shape[1] - 3,
+                ),
+            ], style={"margin-top": 50})
         ], style={"margin-top": 150})
     ]),
 
-    html.Div(className="row", children=[
-        dcc.Slider(
-            id='day-slider',
-            min=0,
-            max=us_time_series.shape[1] - 3,
-            step=1,
-            value=us_time_series.shape[1] - 3,
-        ),
+    html.Div(className='row', children=[
+        html.Div(children=[
+            dcc.Graph(id='pie', config={'displayModeBar': False})
+        ], className="six columns")
     ])
 ])
 
 
 @ app.callback(
     Output(component_id='line_graph', component_property='figure'),
-    [Input(component_id='dropdown', component_property='value')]
+    [Input(component_id='line-graph-button', component_property='n_clicks')]
 )
-def display_line_graph(val):
+def display_line_graph(n_clicks):
     fig = go.Figure()
-    if val == "the United States":
+    if n_clicks % 2 == 0:
         fig.add_trace(go.Scatter(x=np.arange(len(us_totals)),
                                  y=us_totals, mode='lines+markers', name='Cases in the US'))
         title = "Total COVID-19 Cases in the United States"
@@ -191,26 +191,29 @@ def display_line_graph(val):
 
 
 @ app.callback(
-    Output(component_id='map', component_property='figure'),
+    [Output(component_id='map', component_property='figure'),
+     Output(component_id='pie', component_property='figure')],
     [Input(component_id='day-slider', component_property='value')]
 )
 def display_map(slider_val):
-    loc_cases = pd.DataFrame(columns=["Location", "Number of Cases"])
+    loc_cases = pd.DataFrame(
+        columns=["Location", "Number of Cases", "Log Number of Cases"])
     for loc in us_time_series['Province_State']:
         if loc in us_state_abbrev.keys():
             log_val = log(us_time_series[us_time_series['Province_State'] == loc].transpose()[
                 2:].squeeze().to_list()[slider_val])/log(10) if us_time_series[us_time_series['Province_State'] == loc].transpose()[
                 2:].squeeze().to_list()[slider_val] != 0 else 0
             loc_cases = loc_cases.append(
-                {"Location": us_state_abbrev[loc], "Number of Cases": log_val}, ignore_index=True)
+                {"Location": us_state_abbrev[loc], "Number of Cases": us_time_series[us_time_series['Province_State'] == loc].transpose()[
+                    2:].squeeze().to_list()[slider_val], "Log Number of Cases": log_val}, ignore_index=True)
 
     fig = go.Figure(data=go.Choropleth(
         locations=loc_cases['Location'],  # Spatial coordinates
-        z=loc_cases['Number of Cases'].astype(
+        z=loc_cases['Log Number of Cases'].astype(
             float),  # Data to be color-coded
         locationmode='USA-states',
         colorbar=dict(len=1,
-                      title='Number of Cases',
+                      title='Number of Cases (Logarithmic)',
                       x=0.9,
                       tickvals=[0, 1, 2, 3, 4, 5, 6],
                       ticktext=['0', '10', '100', '1000', '10000', '100000', '1000000'])
@@ -226,7 +229,10 @@ def display_map(slider_val):
                           font_color="white"
         )
     )
-    return fig
+
+    loc_cases.loc[loc_cases['Number of Cases'] /
+                  us_totals[slider_val] < 0.02, 'Location'] = 'Other'
+    return fig, px.pie(loc_cases, values='Number of Cases', names='Location', template='plotly_dark')
 
 
 if __name__ == "__main__":
