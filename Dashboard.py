@@ -76,49 +76,27 @@ us_state_abbrev = {
     'Wisconsin': 'WI',
     'Wyoming': 'WY'
 }
-colorscale = ["#f7fbff", "#ebf3fb", "#deebf7", "#d2e3f3", "#c6dbef", "#b3d2e9", "#9ecae1",
-              "#85bcdb", "#6baed6", "#57a0ce", "#4292c6", "#3082be", "#2171b5", "#1361a9",
-              "#08519c", "#0b4083", "#08306b"
-              ]
+
 ### CLEANING OUT THE DATA ###
 
 us_time_series = pd.read_csv(
     "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv")
-global_time_series=pd.read_csv(
+global_time_series = pd.read_csv(
     "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv")
 us_time_series = us_time_series.drop(
     ["UID", "code3", "FIPS", "Lat", "Long_"], axis=1)
-global_time_series=global_time_series.drop(["Province/State","Lat","Long"], axis=1)
-global_time_series=global_time_series.groupby('Country/Region', as_index=False).sum()
+global_time_series = global_time_series.drop(
+    ["Province/State", "Lat", "Long"], axis=1)
+global_time_series = global_time_series.groupby(
+    'Country/Region', as_index=False).sum()
 us_time_series = us_time_series.groupby('Province_State', as_index=False).sum()
 
-new_columns = []
-for col in us_time_series.columns:
-    if col == "Province_State":
-        new_columns.append("Province_State")
-    else:
-        mmddyyyy = col + "20"
-        date_format = "%m/%d/%Y"
-        current_date = datetime.strptime(mmddyyyy, date_format)
-        original_date = datetime.strptime('1/22/2020', date_format)
-        new_columns.append((current_date - original_date).days)
-global_col=[]
-for col in global_time_series.columns:
-    if col == "Country/Region":
-        global_col.append("Country/Region")
-    else:
-        mmddyyyy=col+"20"
-        date_format = "%m/%d/%Y"
-        current_date = datetime.strptime(mmddyyyy, date_format)
-        original_date = datetime.strptime('1/22/2020', date_format)
-        global_col.append((current_date - original_date).days)
 
-us_time_series.columns = new_columns
-global_time_series.columns=global_col
 us_totals = us_time_series.drop(
     "Province_State", axis=1).sum(axis=0)[1:].to_list()
-global_totals= global_time_series.drop(
+global_totals = global_time_series.drop(
     "Country/Region", axis=1).sum(axis=0)[1:].to_list()
+
 ### APP LAYOUT ###
 
 app.layout = html.Div([
@@ -149,7 +127,7 @@ us_page = html.Div(children=[
 
         html.Div(className="four columns", children=[
              html.Button('Switch Graph View',
-                         id='line-graph-button', n_clicks=0)
+                         id='us_line_graph_button', n_clicks=0)
              ], style={'margin-top': 30, 'text-align': 'center', 'color': 'white'}),
 
         html.Div(className="seven columns", children=[
@@ -159,7 +137,7 @@ us_page = html.Div(children=[
     ]),
 
     html.Div(className='row', children=[
-        dcc.Graph(id='line_graph', config={'displayModeBar': False},
+        dcc.Graph(id='us_line_graph', config={'displayModeBar': False},
                   animate=True)
     ], style={'margin-left': 50, 'margin-right': 50}),
 
@@ -168,13 +146,13 @@ us_page = html.Div(children=[
     ], style={'margin': 50}),
 
     html.Div(className='row', children=[
-        dcc.Graph(id='line_graph_2', config={'displayModeBar': False},
+        dcc.Graph(id='us_line_graph_2', config={'displayModeBar': False},
                   animate=True)
     ], style={'margin-left': 50, 'margin-right': 50}),
 
     html.Div(className='row', children=[
         html.Div(className="eight columns", children=[
-             dcc.Graph(id='map', style={"height": 500},
+             dcc.Graph(id='us_map', style={"height": 500},
                        config={'displayModeBar': False})
              ]),
         html.Div(className="three columns", children=[
@@ -182,7 +160,7 @@ us_page = html.Div(children=[
                  "This is a cloropleth map of COVID-19 cases in the United States. Note that the colors are scaled logarithmically so that differences are more visible. Move the slider below to change the day of the data the map is showing."),
             html.Div(className="row", children=[
                 dcc.Slider(
-                     id='day-slider',
+                     id='us_day_slider',
                      min=0,
                      max=us_time_series.shape[1] - 3,
                      step=1,
@@ -194,7 +172,7 @@ us_page = html.Div(children=[
 
     html.Div(className='row', children=[
         html.Div(children=[
-             dcc.Graph(id='pie', config={'displayModeBar': False})
+             dcc.Graph(id='us_pie', config={'displayModeBar': False})
              ], className="six columns")
     ])
 ])
@@ -214,16 +192,16 @@ global_page = html.Div(children=[
     ]),
 
     html.Hr(),
-    
+
     html.Div(className='row', children=[
 
         html.Div(className="four columns", children=[
              html.Button('Switch Graph View',
-                         id='global-line-button', n_clicks=0)
+                         id='global_line_graph_button', n_clicks=0)
              ], style={'margin-top': 30, 'text-align': 'center', 'color': 'white'}),
 
         html.Div(className="seven columns", children=[
-            html.P("\nThis graph represents the number of cases of COVID-19 globally. as a function of days after January 22, 2020. This data was collected by John Hopkins University and made freely available on GitHub. Toggle the button on the left to switch between graphs displaying data for states/provinces and totals for the United States. To view data only for a specific state, double-click its name in the legend of the graph. You can also compare the data of two or more states in this way as well.")
+            html.P("\nThis graph represents the number of cases of COVID-19 in the U.S. as a function of days after January 22, 2020. This data was collected by John Hopkins University and made freely available on GitHub. Toggle the button on the left to switch between graphs displaying data for states/provinces and totals for the United States. To view data only for a specific state, double-click its name in the legend of the graph. You can also compare the data of two or more states in this way as well.")
         ])
 
     ]),
@@ -234,30 +212,39 @@ global_page = html.Div(children=[
     ], style={'margin-left': 50, 'margin-right': 50}),
 
     html.Div(className='row', children=[
-        html.P("The graph below plots the new daily cases versus the number of total cases at some point in time. Like for the graph above, click the button to toggle the graph data and click on a specific region to view its graph alone. Plotting the new cases versus total cases can help determine the type of growth of the curve. If points lie roughly along a straight line, this means that the number of new cases increases rapidly as the totals increase, which implies exponential growth. On the other hand, flat and declining curves imply constant and slowing growth, respectively. Due to the volatality of the graph, only a rough idea of the type of growth curve can be obtained.")
+        html.P("The graph below plots the new daily cases versus the number of total cases at some point in time. Like for the graph above, click the button to toggle the graph data and click on a specific state to view its graph alone. Plotting the new cases versus total cases can help determine the type of growth of the curve. If points lie roughly along a straight line, this means that the number of new cases increases rapidly as the totals increase, which implies exponential growth. On the other hand, flat and declining curves imply constant and slowing growth, respectively. Due to the volatality of the graph, only a rough idea of the type of growth curve can be obtained.")
     ], style={'margin': 50}),
 
-    
+    html.Div(className='row', children=[
+        dcc.Graph(id='global_line_graph_2', config={'displayModeBar': False},
+                  animate=True)
+    ], style={'margin-left': 50, 'margin-right': 50}),
 
-        # html.Div(className='row', children=[
-        #     html.Div(className="eight columns", children=[
-        #         dcc.Graph(id='map', style={"height": 500},
-        #                 config={'displayModeBar': False})
-        #         ]),
-        #     html.Div(className="three columns", children=[
-        #         html.P(
-        #             "This is a cloropleth map of COVID-19 cases in the United States. Note that the colors are scaled logarithmically so that differences are more visible. Move the slider below to change the day of the data the map is showing."),
-        #         html.Div(className="row", children=[
-        #             dcc.Slider(
-        #                 id='day-slider',
-        #                 min=0,
-        #                 max=global_time_series.shape[1] - 3,
-        #                 step=1,
-        #                 value=global_time_series.shape[1] - 3,
-        #                 ),
-        #         ], style={"margin-top": 50})
-        #     ], style={"margin-top": 150})
-        # ]),
+    html.Div(className='row', children=[
+        html.Div(className="eight columns", children=[
+             dcc.Graph(id='global_map', style={"height": 500},
+                       config={'displayModeBar': False})
+             ]),
+        html.Div(className="three columns", children=[
+            html.P(
+                 "This is a cloropleth map of COVID-19 cases in the United States. Note that the colors are scaled logarithmically so that differences are more visible. Move the slider below to change the day of the data the map is showing."),
+            html.Div(className="row", children=[
+                dcc.Slider(
+                     id='global_day_slider',
+                     min=0,
+                     max=us_time_series.shape[1] - 3,
+                     step=1,
+                     value=us_time_series.shape[1] - 3,
+                     ),
+            ], style={"margin-top": 50})
+        ], style={"margin-top": 150})
+    ]),
+
+    html.Div(className='row', children=[
+        html.Div(children=[
+             dcc.Graph(id='global_pie', config={'displayModeBar': False})
+             ], className="six columns")
+    ])
 ])
 
 #### CALLBACKS ####
@@ -275,11 +262,11 @@ def return_content(val):
 
 
 @ app.callback(
-    [Output(component_id='line_graph', component_property='figure'), Output(
-        component_id='line_graph_2', component_property='figure')],
-    [Input(component_id='line-graph-button', component_property='n_clicks')]
+    [Output(component_id='us_line_graph', component_property='figure'), Output(
+        component_id='us_line_graph_2', component_property='figure')],
+    [Input(component_id='us_line_graph_button', component_property='n_clicks')]
 )
-def display_line_graph(n_clicks):
+def us_line_graphs(n_clicks):
     fig = go.Figure()
     fig2 = go.Figure()
 
@@ -339,57 +326,79 @@ def display_line_graph(n_clicks):
 
     return fig, fig2
 
+
 @ app.callback(
-    Output(component_id='global_line_graph', component_property='figure'),
-    [Input(component_id='global-line-button', component_property='n_clicks')])
-def display_global_line_graph(n_clicks):
-    fig3 = go.Figure()
+    [Output(component_id='global_line_graph', component_property='figure'), Output(
+        component_id='global_line_graph_2', component_property='figure')],
+    [Input(component_id='global_line_graph_button', component_property='n_clicks')]
+)
+def global_line_graphs(n_clicks):
+    fig = go.Figure()
+    fig2 = go.Figure()
 
     if n_clicks % 2 == 0:
-        fig3.add_trace(go.Scatter(x=np.arange(len(global_totals)),
-                                 y=global_totals, mode='lines+markers', name='Cases Worldwide'))
+        fig.add_trace(go.Scatter(x=np.arange(len(global_totals)),
+                                 y=global_totals, mode='lines+markers', name='Cases in the World'))
 
         new_cases = []
-        for i in range(len(global_totals)):
+        for i in range(len(us_totals)):
             if i == 0:
                 new_cases.append(global_totals[0])
-            else:       
+            else:
                 new_cases.append(global_totals[i] - global_totals[i-1])
 
-        title1 = "Total COVID-19 Cases in the World vs. Days since Jan. 20, 2022"
+        fig2.add_trace(go.Scatter(x=global_totals,
+                                  y=new_cases, mode='lines+markers', name='Cases in the World'))
+
+        title1 = "Total COVID-19 Cases in the World"
+        title2 = "New COVID-19 Cases in the World vs. Total Cases"
     else:
         for loc in global_time_series['Country/Region'].to_list():
-             y_list = global_time_series[global_time_series['Country/Region'] == loc].transpose()[
-                 2:].squeeze().to_list()
-             fig3.add_trace(go.Scatter(x=np.arange(len(y_list)),
-                                      y=y_list, mode='lines+markers', name=loc))
+            y_list = global_time_series[global_time_series['Country/Region'] == loc].transpose()[
+                2:].squeeze().to_list()
+            fig.add_trace(go.Scatter(x=np.arange(len(y_list)),
+                                     y=y_list, mode='lines+markers', name=loc))
 
-             new_cases = []
-             for i in range(len(global_totals)):
-                 if i == 0:
-                     new_cases.append(y_list[0])
-                 else:
-                     new_cases.append(y_list[i] - y_list[i-1])
-        title1 = "COVID-19 Cases in Countries and Regions"
+            new_cases = []
+            for i in range(len(global_totals)):
+                if i == 0:
+                    new_cases.append(y_list[0])
+                else:
+                    new_cases.append(y_list[i] - y_list[i-1])
 
-    fig3.update_layout(title=title1,
-                      xaxis_title='Days since Jan. 22, 2020',
+            fig2.add_trace(go.Scatter(x=y_list,
+                                      y=new_cases, mode='lines+markers', name=loc))
+
+        title1 = "COVID-19 Cases in Countries"
+        title2 = "New COVID-19 Cases vs. Total Cases in Countries"
+
+    fig.update_layout(title=title1,
+                      xaxis_title='Days',
                       yaxis_title='Number of Cases', template='plotly_dark', hovermode='x unified', hoverlabel=dict(
                           bgcolor="black",
                           font_size=11,
                           font_family="Rockwell",
                           font_color="white"
                       ))
-    return fig3
+
+    fig2.update_layout(title=title2,
+                       xaxis_title='Number of Cases',
+                       yaxis_title='Number of New Cases', template='plotly_dark', hovermode='x unified', hoverlabel=dict(
+                           bgcolor="black",
+                           font_size=11,
+                           font_family="Rockwell",
+                           font_color="white"
+                       ))
+
+    return fig, fig2
+
 
 @ app.callback(
-    [Output(component_id='map', component_property='figure'),
-     Output(component_id='pie', component_property='figure')],
-    [Input(component_id='day-slider', component_property='value')]
-
-
+    [Output(component_id='us_map', component_property='figure'),
+     Output(component_id='us_pie', component_property='figure')],
+    [Input(component_id='us_day_slider', component_property='value')]
 )
-def display_map(slider_val):
+def us_map(slider_val):
     loc_cases = pd.DataFrame(
         columns=["Location", "Number of Cases", "Log Number of Cases"])
     for loc in us_time_series['Province_State']:
@@ -429,5 +438,49 @@ def display_map(slider_val):
     return fig, px.pie(loc_cases, values='Number of Cases', names='Location', template='plotly_dark', color_discrete_sequence=px.colors.sequential.Inferno)
 
 
+@ app.callback(
+    [Output(component_id='global_map', component_property='figure'),
+     Output(component_id='global_pie', component_property='figure')],
+    [Input(component_id='global_day_slider', component_property='value')]
+)
+def global_map(slider_val):
+    loc_cases = pd.DataFrame(
+        columns=["Location", "Number of Cases", "Log Number of Cases"])
+    for loc in global_time_series['Country/Region']:
+        log_val = log(global_time_series[global_time_series['Country/Region'] == loc].transpose()[
+            2:].squeeze().to_list()[slider_val])/log(10) if global_time_series[global_time_series['Country/Region'] == loc].transpose()[
+            2:].squeeze().to_list()[slider_val] != 0 else 0
+        loc_cases = loc_cases.append(
+            {"Location": loc, "Number of Cases": global_time_series[global_time_series['Country/Region'] == loc].transpose()[
+                2:].squeeze().to_list()[slider_val], "Log Number of Cases": log_val}, ignore_index=True)
+
+    fig = go.Figure(data=go.Choropleth(
+        locations=loc_cases['Location'],  # Spatial coordinates
+        z=loc_cases['Log Number of Cases'].astype(
+            float),  # Data to be color-coded
+        locationmode='country names',
+        colorbar=dict(len=1,
+                      title='Number of Cases (Logarithmic)',
+                      x=0.9,
+                      tickvals=[0, 1, 2, 3, 4, 5, 6],
+                      ticktext=['0', '10', '100', '1000', '10000', '100000', '1000000'])
+    ),)
+
+    fig.update_layout(
+        title_text='Map of COVID-19 Cases in the World',  # Create a Title
+        geo_scope='world',  # Plot only the USA instead of globe
+        template='plotly_dark', hoverlabel=dict(
+            bgcolor="white",
+            font_size=11,
+            font_family="Rockwell",
+            font_color="white"
+        )
+    )
+
+    loc_cases.loc[loc_cases['Number of Cases'] /
+                  global_totals[slider_val] < 0.02, 'Location'] = 'Other'
+    return fig, px.pie(loc_cases, values='Number of Cases', names='Location', template='plotly_dark', color_discrete_sequence=px.colors.sequential.Inferno)
+
+
 if __name__ == "__main__":
-    app.run_server(debug=True, host='127.0.0.1')
+    app.run_server(debug=True, host='0.0.0.0')
