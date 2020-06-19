@@ -110,7 +110,7 @@ app.layout = html.Div([
 us_page = html.Div(children=[
 
     html.Div(className='row', children=[
-        html.H1("COVID-19 Case Data for the United States",
+        html.H1("United States COVID-19 Case Data",
                 style={'text-align': 'center', 'margin-top': 40, 'margin-bottom':
                        10}),
     ]),
@@ -201,7 +201,7 @@ global_page = html.Div(children=[
              ], style={'margin-top': 30, 'text-align': 'center', 'color': 'white'}),
 
         html.Div(className="seven columns", children=[
-            html.P("\nThis graph represents the number of cases of COVID-19 in the U.S. as a function of days after January 22, 2020. This data was collected by John Hopkins University and made freely available on GitHub. Toggle the button on the left to switch between graphs displaying data for states/provinces and totals for the United States. To view data only for a specific state, double-click its name in the legend of the graph. You can also compare the data of two or more states in this way as well.")
+            html.P("\nThis graph represents the number of cases of COVID-19 in the world as a function of days after January 22, 2020. This data was collected by John Hopkins University and made freely available on GitHub. Toggle the button on the left to switch between graphs displaying data for individual countries and global totals. To view data only for a specific country, double-click its name in the legend of the graph. You can also compare the data of two or more countries in this way as well.")
         ])
 
     ]),
@@ -227,7 +227,7 @@ global_page = html.Div(children=[
              ]),
         html.Div(className="three columns", children=[
             html.P(
-                 "This is a cloropleth map of COVID-19 cases in the United States. Note that the colors are scaled logarithmically so that differences are more visible. Move the slider below to change the day of the data the map is showing."),
+                 "This is a cloropleth map of global COVID-19 cases. Note that the colors are scaled logarithmically so that differences are more visible. Move the slider below to change the day of the data the map is showing."),
             html.Div(className="row", children=[
                 dcc.Slider(
                      id='global_day_slider',
